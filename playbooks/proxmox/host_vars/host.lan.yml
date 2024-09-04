@@ -1,0 +1,15 @@
+# SSH config
+ansible_password: <SSH_PASSWORD>
+
+# Proxmox details
+proxmox:
+  user: <PROXMOX_USER>@pam
+  password: <PROXMOX_PASSWORD>
+  host: <HOSTNAME>
+
+  # # (Optional) Create the Proxmox cluster
+  # cluster:
+  #   name: <PROXMOX_CLUSTER_NAME>
+  #   create: true
+  #   # To join instead do
+  #   # hostname: <PROXMOX_MEMBER_HOSTNAME>

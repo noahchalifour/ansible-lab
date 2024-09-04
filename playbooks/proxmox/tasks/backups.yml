@@ -1,0 +1,37 @@
+- name: Install packages needed for backups
+  apt:
+    pkg: 
+      - jq
+      - snapd
+
+- name: Install aws-cli snap
+  community.general.snap:
+    name: aws-cli
+    classic: true
+
+- name: Make sure logs directory exists
+  file:
+    path: /etc/log
+    state: directory
+
+- name: Make sure configs backup cronjob exists
+  ansible.builtin.cron:
+    name: "backup proxmox configs"
+    special_time: daily
+    job: >-
+      /etc/scripts/proxmox_backup_configs.sh
+      -b {{ aws_s3_bucket }}
+      -a {{ aws_access_key_id }}
+      -s {{ aws_secret_access_key }}
+      -r {{ aws_region }} > /etc/log/proxmox_configs_backup.log 2>&1
+
+- name: Make sure volumes backup cronjob exists
+  ansible.builtin.cron:
+    name: "backup proxmox volumes"
+    special_time: daily
+    job: >-
+      /etc/scripts/proxmox_backup_volumes.sh
+      -b {{ aws_s3_bucket }}
+      -a {{ aws_access_key_id }}
+      -s {{ aws_secret_access_key }}
+      -r {{ aws_region }} > /etc/log/proxmox_volumes_backup.log 2>&1

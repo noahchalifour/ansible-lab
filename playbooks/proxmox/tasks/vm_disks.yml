@@ -1,0 +1,144 @@
+- name: Make sure images directory exists
+  file:
+    path: "{{ proxmox_images_dir }}"
+    state: directory
+
+- name: Make sure configs directory exists
+  file:
+    path: "{{ proxmox_config_dir }}"
+    state: directory
+
+- name: Make sure packages needed for AWS CLI are installed
+  apt:
+    pkg:
+      - python3
+      - python3-boto3
+      - python3-botocore
+
+- name: Get the Proxmox config from S3
+  amazon.aws.s3_object:
+    access_key: "{{ aws_access_key_id }}"
+    secret_key: "{{ aws_secret_access_key }}"
+    bucket: "{{ aws_s3_bucket }}"
+    object: "{{ ansible_hostname }}.json"
+    dest: /etc/config/{{ ansible_hostname }}.json
+    mode: get
+
+- name: List all the disks stored in S3
+  amazon.aws.s3_object:
+    access_key: "{{ aws_access_key_id }}"
+    secret_key: "{{ aws_secret_access_key }}"
+    bucket: "{{ aws_s3_bucket }}"
+    prefix: "{{ aws_s3_images_prefix }}"
+    mode: list
+  register: s3_disks
+
+# TODO: Use checksums to see if file actually needs to be downloaded from S3 or not
+
+- name: Get all the disk files from S3
+  amazon.aws.s3_object:
+    access_key: "{{ aws_access_key_id }}"
+    secret_key: "{{ aws_secret_access_key }}"
+    bucket: "{{ aws_s3_bucket }}"
+    object: "{{ item }}"
+    dest: "{{ [proxmox_images_dir, (item | basename)] | path_join }}"
+    mode: get
+  with_items: "{{ s3_disks.s3_keys }}"
+
+- name: Convert S3 keys to disk names
+  set_fact:
+    s3_disks: "{{ s3_disks.s3_keys | map('basename') }}"
+
+- name: Check if uncompressed files exist
+  stat:
+    path: "{{ [proxmox_images_dir, (item | splitext | first)] | path_join }}"
+  with_items: "{{ s3_disks }}"
+  register: uncompressed_files
+
+- name: Uncompress .xz files
+  command: "xz -dvfk -T 0 {{ [proxmox_images_dir, item.item] | path_join }}"
+  when: item.item.endswith('.xz') and not item.stat.exists
+  with_items: "{{ uncompressed_files.results }}"
+  args:
+    creates: "{{ item.item | splitext | first }}"
+
+- name: Slurp the config from the Proxmox host
+  ansible.builtin.slurp:
+    src: /etc/config/{{ ansible_hostname }}.json
+  register: proxmox_config_slurp
+
+- name: Parse the Proxmox config
+  set_fact:
+    proxmox_config: "{{ proxmox_config_slurp['content'] | b64decode | from_json }}"
+
+- name: Build list of disks to import
+  set_fact:
+    proxmox_disks: "{{ proxmox_config | map('extract_disks') }}"
+
+- name: Check the existance of disks
+  stat:
+    path: "{{ [proxmox_disks_loc, item.id] | path_join }}"
+  with_items: "{{ proxmox_disks }}"
+  register: local_proxmox_disks
+
+- name: Import qcow2 disks into Proxmox
+  community.general.proxmox_disk:
+    api_user: "{{ proxmox.user }}"
+    api_password: "{{ proxmox.password }}"
+    api_host: "{{ proxmox.host }}"
+    vmid: "{{ item.item.vm_id }}"
+    state: present
+    disk: "{{ item.item.disk }}"
+    storage: "{{ item.item.storage }}"
+    format: qcow2
+    import_from: "{{ [proxmox_images_dir, item.item.id + '.qcow2'] | path_join }}"
+  # Ignore errors for now because efi disks are not supported
+  ignore_errors: true
+  when: proxmox_allow_import_disks and not item.stat.exists
+  with_items: "{{ local_proxmox_disks.results }}"
+  register: disk_imports
+  delegate_to: localhost
+
+- name: Get VMs with disk updates
+  set_fact:
+    vm_disk_updates: "{{ proxmox_config | vm_disk_update_map(import_results=disk_imports.results) }}"
+
+- name: Update the VMs to boot from disks
+  community.general.proxmox_kvm:
+    api_user: "{{ proxmox.user }}"
+    api_password: "{{ proxmox.password }}"
+    api_host: "{{ proxmox.host }}"
+    node: "{{ item.targetnode }}"
+    vmid: "{{ item.vmid }}"
+    boot: "{{ item.boot }}"
+    bootdisk: "{{ item.bootdisk | default('scsi0') }}"
+    update: true
+  when: vm_disk_updates[item.vmid]
+  with_items: "{{ proxmox_config }}"
+  register: vm_updates
+  delegate_to: localhost
+
+- name: Stop the VMs with changes
+  community.general.proxmox_kvm:
+    api_user: "{{ proxmox.user }}"
+    api_password: "{{ proxmox.password }}"
+    api_host: "{{ proxmox.host }}"
+    node: "{{ item.item.targetnode }}"
+    vmid: "{{ item.item.vmid }}"
+    state: stopped
+    force: true
+  when: item.changed
+  with_items: "{{ vm_updates.results }}"
+  delegate_to: localhost
+
+- name: Start the VMs with changes
+  community.general.proxmox_kvm:
+    api_user: "{{ proxmox.user }}"
+    api_password: "{{ proxmox.password }}"
+    api_host: "{{ proxmox.host }}"
+    vmid: "{{ item.item.vmid }}"
+    node: "{{ item.item.targetnode }}"
+    state: started
+  when: item.changed
+  with_items: "{{ vm_updates.results }}"
+  delegate_to: localhost

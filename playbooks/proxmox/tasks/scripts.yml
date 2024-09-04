@@ -1,0 +1,11 @@
+- name: Make sure scripts directory exists
+  file:
+    path: /etc/scripts
+    state: directory
+
+- name: Copy scripts
+  copy:
+    src: "{{ item.root }}/{{ item.path }}"
+    dest: "/etc/scripts/{{ item.path }}"
+    mode: "0755"
+  with_filetree: ../scripts

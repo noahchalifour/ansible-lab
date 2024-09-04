@@ -1,0 +1,17 @@
+- name: Check if '/etc/pve/corosync.conf' exists
+  stat:
+    path: /etc/pve/corosync.conf
+  register: corosync
+
+- name: Create Proxmox cluster
+  shell: pvecm create {{ proxmox.cluster.name }}
+  when: (proxmox.cluster.create | default(false)) and not corosync.stat.exists
+
+- name: Join {{ proxmox.cluster.name }} cluster
+  block:
+    - name: Prescan SSH keys
+      shell: ssh-keyscan -H {{ proxmox.cluster.hostname }} >> ~/.ssh/known_hosts
+
+    - name: Add node to cluster
+      shell: pvecm add {{ proxmox.cluster.hostname }} --use_ssh
+  when: proxmox.cluster.hostname is defined and not corosync.stat.exists

@@ -1,0 +1,3 @@
+- hosts: proxmox
+  tasks:
+    - include_tasks: tasks/main.yml

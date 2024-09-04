@@ -1,0 +1,16 @@
+# SSH variables
+ansible_user: <ANSIBLE_SSH_USER>
+ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
+
+# AWS variables
+aws_access_key_id: <AWS_ACCESS_KEY_ID>
+aws_secret_access_key: <AWS_SECRET_ACCESS_KEY>
+aws_region: <AWS_REGION>
+aws_s3_bucket: <AWS_S3_BUCKET>
+aws_s3_images_prefix: qcow2
+
+# Proxmox variables
+proxmox_config_dir: /etc/config
+proxmox_images_dir: /var/lib/vz/images
+proxmox_disks_loc: /dev/pve
+proxmox_allow_import_disks: true

@@ -1,0 +1,12 @@
+- name: Set up VM disks
+  include_tasks: ./vm_disks.yml
+  when: proxmox_allow_import_disks
+
+- name: Set up scripts
+  include_tasks: ./scripts.yml
+
+- name: Set up backups
+  include_tasks: ./backups.yml
+
+- name: Configure cluster
+  include_tasks: ./cluster.yml
