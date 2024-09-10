@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Command locations
-qm=/usr/sbin/qm
+alias qm=/usr/sbin/qm
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 

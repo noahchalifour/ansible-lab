@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Command locations
-qm=/usr/sbin/qm
+alias qm=/usr/sbin/qm
 
 # Variables declarations
 CONFIG_DIR=/etc/config
