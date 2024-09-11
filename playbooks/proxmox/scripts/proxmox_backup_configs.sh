@@ -1,8 +1,5 @@
 #!/bin/bash
 
-# Command locations
-alias qm=/usr/sbin/qm
-
 # Variables declarations
 CONFIG_DIR=/etc/config
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
@@ -47,7 +44,7 @@ function add_qm_config_to_json {
     vm_id="$1"
 
     # Get the VM config as JSON
-    qm_config=$(qm config $vm_id)
+    qm_config=$(/usr/sbin/qm config $vm_id)
     qm_config_json=$(echo -e "$qm_config" | qm_config_as_json)
 
     # Only backup the VMs that have the "backup" tag
@@ -76,7 +73,7 @@ mkdir -p $CONFIG_DIR
 echo "[]" > $PROXMOX_CONFIGS_JSON
 
 # Get all the VM IDs
-vm_ids=$(qm list | awk -F ' ' '{print $1}' | tail -n +2)
+vm_ids=$(/usr/sbin/qm list | awk -F ' ' '{print $1}' | tail -n +2)
 
 # Iterate over the VM IDs
 for vm_id in $vm_ids

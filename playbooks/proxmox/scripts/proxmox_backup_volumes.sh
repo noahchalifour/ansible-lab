@@ -1,8 +1,5 @@
 #!/bin/bash
 
-# Command locations
-alias qm=/usr/sbin/qm
-
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
 # Import helpers
@@ -78,7 +75,7 @@ function backup_volumes_for_vm {
     vm_id="$1"
 
     # Get the config for the VM
-    config_output=$(qm config $vm_id)
+    config_output=$(/usr/sbin/qm config $vm_id)
 
     # Only backup the VMs that have the "backup" tag
     if ! qm_config_has_backups_tag "$config_output"; then
@@ -87,7 +84,7 @@ function backup_volumes_for_vm {
     fi
 
     # Do a clean shutdown of the VM
-    qm shutdown "$vm_id"
+    /usr/sbin/qm shutdown "$vm_id"
 
     echo "Backing up all volumes for VM '$vm_id'"
 
@@ -114,7 +111,7 @@ function backup_volumes_for_vm {
     done <<< "$config_output"
 
     # Restart the VM once backups are done
-    qm start "$vm_id"
+    /usr/sbin/qm start "$vm_id"
 }
 
 # Export credentials
@@ -122,7 +119,7 @@ export AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID"
 export AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY"
 
 # Get all the VM IDs
-vm_ids=$(qm list | awk -F ' ' '{print $1}' | tail -n +2)
+vm_ids=$(/usr/sbin/qm list | awk -F ' ' '{print $1}' | tail -n +2)
 
 # Iterate over the VM IDs
 for vm_id in $vm_ids
