@@ -53,7 +53,7 @@ function backup_volume {
     xz -0 -zv -T 0 $IMAGES_DIR/$qcow_name.qcow2
 
     # Upload the compressed disk file to S3
-    aws s3 cp \
+    /snap/bin/aws s3 cp \
         --region $AWS_REGION \
         "$IMAGES_DIR/$qcow_name.qcow2.xz" \
         "s3://${AWS_S3_BUCKET_NAME}${AWS_S3_QCOW2_PATH}/${qcow_name}.qcow2.xz"
