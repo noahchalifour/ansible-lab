@@ -1,0 +1,13 @@
+- name: Make sure scripts directory exists
+  become: true
+  file:
+    path: /root/truenas/scripts
+    state: directory
+
+- name: Copy scripts
+  become: true
+  copy:
+    src: "{{ item.root }}/{{ item.path }}"
+    dest: "/root/truenas/scripts/{{ item.path }}"
+    mode: "0755"
+  with_filetree: ../scripts

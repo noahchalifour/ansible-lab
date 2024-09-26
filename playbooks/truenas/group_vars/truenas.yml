@@ -1,0 +1,11 @@
+# AWS configuration
+aws:
+  access_key_id: <AWS_ACCESS_KEY_ID>
+  secret_access_key: <AWS_SECRET_ACCESS_KEY>
+  
+  # S3 buckets
+  backup_s3_bucket: <AWS_S3_BUCKET>
+
+# Restic configuration
+restic:
+  password: <RESTIC_PASSWORD>

@@ -1,0 +1,5 @@
+- name: Set up backups
+  include_tasks: ./backups.yml
+
+- name: Add scripts
+  include_tasks: ./scripts.yml
