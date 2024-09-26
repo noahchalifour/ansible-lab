@@ -7,6 +7,7 @@ This repository contains the Ansible playbooks for configuring my home lab.
 ```
 |-- playbooks/                  # All the various different playbooks for the home lab
 |   |-- proxmox/                # The Ansible configuration for Proxmox servers
+|   |-- truenas/                # The Ansible configuration for TrueNAS servers
 |-- requirements/
 |   |-- pip.txt                 # Python pip requirements file
 |   |-- ansible_galaxy.yml      # Ansible galaxy requirements file
